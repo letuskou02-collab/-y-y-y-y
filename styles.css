@@ -586,3 +586,203 @@ body {
         background-color: #1a252f;
     }
 }
+
+/* 地図スタイル */
+.map-container {
+    background: var(--bg-white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr 250px;
+    gap: 0;
+    height: calc(100vh - 400px);
+    min-height: 500px;
+}
+
+.map-view {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+}
+
+.map-info {
+    background: var(--bg-white);
+    padding: 20px;
+    overflow-y: auto;
+    border-left: 1px solid var(--border-color);
+}
+
+.map-info h3 {
+    margin-bottom: 15px;
+    color: var(--text-color);
+}
+
+.map-legend {
+    display: grid;
+    gap: 10px;
+}
+
+.legend-item {
+    padding: 8px;
+    background-color: var(--bg-light);
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.legend-marker {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.legend-marker.primary {
+    background-color: var(--primary-color);
+}
+
+.legend-marker.secondary {
+    background-color: var(--secondary-color);
+}
+
+.legend-marker.warning {
+    background-color: var(--warning-color);
+}
+
+/* 住所入力グループ */
+.location-input-group {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.location-input-group input {
+    flex: 1;
+}
+
+.btn-icon {
+    padding: 8px 12px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.btn-icon:hover {
+    background-color: #2980b9;
+    box-shadow: var(--shadow);
+}
+
+.btn-icon:active {
+    transform: scale(0.95);
+}
+
+.btn-icon:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ジオコード提案 */
+.geocode-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-white);
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+    z-index: 1000;
+    box-shadow: var(--shadow);
+}
+
+.geocode-suggestions.active {
+    display: block;
+}
+
+.geocode-suggestion {
+    padding: 12px;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.geocode-suggestion:last-child {
+    border-bottom: none;
+}
+
+.geocode-suggestion:hover {
+    background-color: var(--bg-light);
+}
+
+.geocode-suggestion-text {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.geocode-suggestion-sub {
+    margin: 4px 0 0 0;
+    font-size: 0.75rem;
+    color: #7f8c8d;
+}
+
+/* 座標表示 */
+.coords-display {
+    display: block;
+    margin-top: 8px;
+    color: var(--secondary-color);
+    font-size: 0.85rem;
+}
+
+.coords-display.error {
+    color: var(--danger-color);
+}
+
+.form-group {
+    position: relative;
+}
+
+/* Leafletマーカーオーバーライド */
+.leaflet-popup-content {
+    margin: 5px 7px;
+    font-size: 0.9rem;
+}
+
+.leaflet-popup-content p {
+    margin: 5px 0;
+}
+
+.leaflet-control-geocoder {
+    box-shadow: var(--shadow) !important;
+}
+
+/* レスポンシブ地図 */
+@media (max-width: 768px) {
+    .map-container {
+        grid-template-columns: 1fr;
+        height: auto;
+        min-height: 400px;
+    }
+
+    .map-info {
+        border-left: none;
+        border-top: 1px solid var(--border-color);
+        max-height: 200px;
+    }
+
+    .geocode-suggestions {
+        position: fixed;
+        width: 90%;
+        left: 5%;
+        max-height: 150px;
+    }
+}

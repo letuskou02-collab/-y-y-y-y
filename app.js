@@ -128,6 +128,19 @@ class UIManager {
             document.getElementById('importFile').click();
         });
         document.getElementById('importFile').addEventListener('change', (e) => this.handleImport(e));
+
+        // ジオコード機能
+        document.getElementById('geocodeBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            this.handleGeocode();
+        });
+
+        document.getElementById('location').addEventListener('input', () => {
+            document.getElementById('geocodeSuggestions').classList.remove('active');
+            document.getElementById('coordsDisplay').textContent = '';
+            document.getElementById('latitude').value = '';
+            document.getElementById('longitude').value = '';
+        });
     }
 
     setTodayAsDefault() {
@@ -154,6 +167,13 @@ class UIManager {
         if (tabName === 'stats-tab') {
             this.updateStats();
         }
+
+        // 地図タブに切り替えた時は地図を初期化
+        if (tabName === 'map-tab') {
+            setTimeout(() => {
+                this.initMap();
+            }, 100);
+        }
     }
 
     async handleFormSubmit(e) {
@@ -164,9 +184,11 @@ class UIManager {
         const location = document.getElementById('location').value;
         const date = document.getElementById('date').value;
         const notes = document.getElementById('notes').value;
+        const latitude = document.getElementById('latitude').value;
+        const longitude = document.getElementById('longitude').value;
 
         // バリデーション
-        if (!roadNumber || !prefecture || !date) {
+        if (!roadNumber || !prefecture || !date || !location) {
             this.showToast('必須項目を入力してください', 'error');
             return;
         }
@@ -177,6 +199,8 @@ class UIManager {
             location,
             date,
             notes,
+            latitude: latitude ? parseFloat(latitude) : null,
+            longitude: longitude ? parseFloat(longitude) : null,
             createdAt: new Date().toISOString()
         };
 
@@ -185,6 +209,9 @@ class UIManager {
             this.showToast('ステッカー記録を追加しました！', 'success');
             document.getElementById('addForm').reset();
             this.setTodayAsDefault();
+            document.getElementById('latitude').value = '';
+            document.getElementById('longitude').value = '';
+            document.getElementById('coordsDisplay').textContent = '';
             await this.loadRecords();
             this.updateStats();
         } catch (error) {
@@ -238,6 +265,7 @@ class UIManager {
                 <div class="record-details">
                     ${record.location ? `<div class="record-detail-item"><strong>取得場所:</strong> ${this.escapeHtml(record.location)}</div>` : ''}
                     <div class="record-detail-item"><strong>取得日:</strong> ${this.formatDate(record.date)}</div>
+                    ${record.latitude && record.longitude ? `<div class="record-detail-item"><strong>座標:</strong> ${parseFloat(record.latitude).toFixed(4)}, ${parseFloat(record.longitude).toFixed(4)}</div>` : ''}
                     ${record.notes ? `<div class="record-detail-item"><strong>メモ:</strong> ${this.escapeHtml(record.notes)}</div>` : ''}
                 </div>
                 <div class="record-actions">
@@ -271,6 +299,12 @@ class UIManager {
         document.getElementById('location').value = record.location || '';
         document.getElementById('date').value = record.date;
         document.getElementById('notes').value = record.notes || '';
+        document.getElementById('latitude').value = record.latitude || '';
+        document.getElementById('longitude').value = record.longitude || '';
+        
+        if (record.latitude && record.longitude) {
+            document.getElementById('coordsDisplay').textContent = `✓ 座標: ${parseFloat(record.latitude).toFixed(4)}, ${parseFloat(record.longitude).toFixed(4)}`;
+        }
 
         // 削除して新規作成の流れで更新
         await this.handleDeleteRecord(id);
@@ -431,6 +465,205 @@ class UIManager {
                 console.log('Service Worker registration failed:', error);
             }
         }
+    }
+
+    // ジオコーディング機能
+    async handleGeocode() {
+        const location = document.getElementById('location').value.trim();
+        
+        if (!location) {
+            this.showToast('取得場所を入力してください', 'error');
+            return;
+        }
+
+        const geocodeBtn = document.getElementById('geocodeBtn');
+        geocodeBtn.disabled = true;
+        geocodeBtn.textContent = '検索中...';
+
+        try {
+            const results = await this.geocodeLocation(location);
+            
+            if (results.length === 0) {
+                this.showToast('住所が見つかりません', 'error');
+                this.showGeocodeSuggestions([]);
+            } else if (results.length === 1) {
+                this.selectGeocodeSuggestion(results[0]);
+            } else {
+                this.showGeocodeSuggestions(results);
+            }
+        } catch (error) {
+            console.error('Geocoding error:', error);
+            this.showToast('住所検索に失敗しました', 'error');
+        } finally {
+            geocodeBtn.disabled = false;
+            geocodeBtn.textContent = '🔍';
+        }
+    }
+
+    async geocodeLocation(location) {
+        // OpenStreetMap Nominatimサービスを使用
+        const query = `${location}, Japan`;
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`;
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Network response was not ok');
+            
+            const results = await response.json();
+            return results.slice(0, 5); // 上位5件を返す
+        } catch (error) {
+            console.error('Geocoding fetch error:', error);
+            throw error;
+        }
+    }
+
+    showGeocodeSuggestions(results) {
+        const container = document.getElementById('geocodeSuggestions');
+        
+        if (results.length === 0) {
+            container.innerHTML = '';
+            container.classList.remove('active');
+            return;
+        }
+
+        container.innerHTML = results.map((result, index) => `
+            <div class="geocode-suggestion" onclick="uiManager.selectGeocodeSuggestion(${JSON.stringify(result).replace(/"/g, '&quot;')})">
+                <p class="geocode-suggestion-text">${this.escapeHtml(result.display_name)}</p>
+                <p class="geocode-suggestion-sub">緯度: ${result.lat}, 経度: ${result.lon}</p>
+            </div>
+        `).join('');
+        
+        container.classList.add('active');
+    }
+
+    selectGeocodeSuggestion(result) {
+        const lat = parseFloat(result.lat);
+        const lon = parseFloat(result.lon);
+        
+        document.getElementById('location').value = result.display_name;
+        document.getElementById('latitude').value = lat;
+        document.getElementById('longitude').value = lon;
+        document.getElementById('coordsDisplay').textContent = `✓ 座標を取得しました (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
+        document.getElementById('coordsDisplay').classList.remove('error');
+        document.getElementById('geocodeSuggestions').classList.remove('active');
+        
+        this.showToast('座標を取得しました', 'success');
+    }
+
+    // 地図機能
+    initMap() {
+        if (this.records.length === 0) {
+            document.getElementById('map').innerHTML = '<p style="padding: 20px; text-align: center; color: #7f8c8d;">地図に表示するデータがありません</p>';
+            return;
+        }
+
+        // 地図が既に初期化されていたら再初期化
+        if (this.map) {
+            this.map.remove();
+            this.map = null;
+        }
+
+        // 日本の中心座標
+        const japanCenter = [36.2048, 138.2529];
+        
+        // Leaflet地図を初期化
+        this.map = L.map('map').setView(japanCenter, 5);
+
+        // タイルレイヤーを追加（OpenStreetMap）
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(this.map);
+
+        // マーカーグループを作成
+        const markerGroup = L.featureGroup();
+        const markersByRoad = {};
+
+        // 座標がある記録のマーカーを追加
+        this.records.forEach(record => {
+            if (record.latitude && record.longitude) {
+                const lat = parseFloat(record.latitude);
+                const lon = parseFloat(record.longitude);
+                
+                // 国道ごとの色を変更
+                const roadNum = record.roadNumber;
+                if (!markersByRoad[roadNum]) {
+                    markersByRoad[roadNum] = [];
+                }
+
+                // マーカーの色を国道番号に基づいて設定
+                const colors = ['#3498db', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6', '#1abc9c'];
+                const colorIndex = roadNum % colors.length;
+                const color = colors[colorIndex];
+
+                const marker = L.circleMarker([lat, lon], {
+                    radius: 8,
+                    fillColor: color,
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                });
+
+                const popupContent = `
+                    <strong>国道${record.roadNumber}</strong><br>
+                    ${record.prefecture}<br>
+                    ${record.location || '場所未設定'}<br>
+                    <small>${this.formatDate(record.date)}</small>
+                `;
+                marker.bindPopup(popupContent);
+                marker.addTo(markerGroup);
+                markersByRoad[roadNum].push(marker);
+            }
+        });
+
+        // マーカーが存在する場合、ビューをマーカーに合わせる
+        if (markerGroup.getLayers().length > 0) {
+            this.map.fitBounds(markerGroup.getBounds(), { padding: [50, 50] });
+        }
+
+        // 凡例を更新
+        this.updateMapLegend();
+    }
+
+    updateMapLegend() {
+        const container = document.getElementById('mapLegend');
+        
+        const prefectureCounts = {};
+        let totalWithCoords = 0;
+
+        this.records.forEach(record => {
+            if (record.latitude && record.longitude) {
+                totalWithCoords++;
+                prefectureCounts[record.prefecture] = (prefectureCounts[record.prefecture] || 0) + 1;
+            }
+        });
+
+        let html = `
+            <div class="legend-item">
+                <strong>マップ情報</strong><br>
+                座標付き記録: ${totalWithCoords}/${this.records.length}
+            </div>
+        `;
+
+        if (totalWithCoords > 0) {
+            html += '<div class="legend-item" style="margin-top: 10px;"><strong>都道府県別</strong></div>';
+            Object.entries(prefectureCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5)
+                .forEach(([prefecture, count]) => {
+                    html += `
+                        <div class="legend-item">
+                            <span class="legend-marker primary"></span>
+                            ${prefecture}: ${count}件
+                        </div>
+                    `;
+                });
+        } else {
+            html += '<div class="legend-item" style="color: #e74c3c; margin-top: 10px;">座標情報がありません</div>';
+        }
+
+        container.innerHTML = html;
     }
 }
 
