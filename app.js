@@ -96,6 +96,8 @@ class UIManager {
         this.records = [];
         this.filteredRecords = [];
         this.db = new Database();
+        this.photos = []; // 写真データを保存
+        this.map = null;
     }
 
     async init() {
@@ -141,6 +143,35 @@ class UIManager {
             document.getElementById('latitude').value = '';
             document.getElementById('longitude').value = '';
         });
+
+        // 現在地取得機能
+        document.getElementById('currentLocationBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            this.handleGetCurrentLocation();
+        });
+
+        // 写真入力
+        document.getElementById('photo').addEventListener('change', (e) => this.handlePhotoInput(e));
+
+        // 手動緯度経度入力
+        document.getElementById('manualLatitude').addEventListener('input', () => {
+            this.syncManualCoords();
+        });
+
+        document.getElementById('manualLongitude').addEventListener('input', () => {
+            this.syncManualCoords();
+        });
+    }
+
+    syncManualCoords() {
+        const lat = document.getElementById('manualLatitude').value;
+        const lon = document.getElementById('manualLongitude').value;
+
+        if (lat && lon) {
+            document.getElementById('latitude').value = lat;
+            document.getElementById('longitude').value = lon;
+            document.getElementById('coordsDisplay').textContent = `✓ 座標: ${parseFloat(lat).toFixed(4)}, ${parseFloat(lon).toFixed(4)}`;
+        }
     }
 
     setTodayAsDefault() {
@@ -201,6 +232,7 @@ class UIManager {
             notes,
             latitude: latitude ? parseFloat(latitude) : null,
             longitude: longitude ? parseFloat(longitude) : null,
+            photos: this.photos, // 写真データを保存
             createdAt: new Date().toISOString()
         };
 
@@ -211,7 +243,11 @@ class UIManager {
             this.setTodayAsDefault();
             document.getElementById('latitude').value = '';
             document.getElementById('longitude').value = '';
+            document.getElementById('manualLatitude').value = '';
+            document.getElementById('manualLongitude').value = '';
             document.getElementById('coordsDisplay').textContent = '';
+            this.photos = []; // 写真データをリセット
+            document.getElementById('photoPreview').innerHTML = '';
             await this.loadRecords();
             this.updateStats();
         } catch (error) {
@@ -256,22 +292,39 @@ class UIManager {
         // 日付でソート（新しい順）
         const sorted = [...this.filteredRecords].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-        container.innerHTML = sorted.map(record => `
-            <div class="record-card">
-                <div class="record-header">
-                    <span class="record-road">国道${record.roadNumber}</span>
-                    <span class="record-prefecture">${record.prefecture}</span>
+        container.innerHTML = sorted.map(record => {
+            const photosHtml = record.photos && record.photos.length > 0 ? `
+                <div class="record-photos">
+                    <div class="record-photos-grid">
+                        ${record.photos.map((photo, idx) => `
+                            <div class="record-photo">
+                                <img src="${photo}" alt="写真${idx + 1}" onclick="uiManager.viewPhotoModal('${photo}')">
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
-                <div class="record-details">
-                    ${record.location ? `<div class="record-detail-item"><strong>取得場所:</strong> ${this.escapeHtml(record.location)}</div>` : ''}
-                    <div class="record-detail-item"><strong>取得日:</strong> ${this.formatDate(record.date)}</div>
-                    ${record.latitude && record.longitude ? `<div class="record-detail-item"><strong>座標:</strong> ${parseFloat(record.latitude).toFixed(4)}, ${parseFloat(record.longitude).toFixed(4)}</div>` : ''}
-                    ${record.notes ? `<div class="record-detail-item"><strong>メモ:</strong> ${this.escapeHtml(record.notes)}</div>` : ''}
+            ` : '';
+
+            return `
+                <div class="record-card">
+                    <div class="record-header">
+                        <span class="record-road">国道${record.roadNumber}</span>
+                        <span class="record-prefecture">${record.prefecture}</span>
+                    </div>
+                    <div class="record-details">
+                        ${record.location ? `<div class="record-detail-item"><strong>取得場所:</strong> ${this.escapeHtml(record.location)}</div>` : ''}
+                        <div class="record-detail-item"><strong>取得日:</strong> ${this.formatDate(record.date)}</div>
+                        ${record.latitude && record.longitude ? `<div class="record-detail-item"><strong>座標:</strong> ${parseFloat(record.latitude).toFixed(4)}, ${parseFloat(record.longitude).toFixed(4)}</div>` : ''}
+                        ${record.notes ? `<div class="record-detail-item"><strong>メモ:</strong> ${this.escapeHtml(record.notes)}</div>` : ''}
+                    </div>
+                    ${photosHtml}
+                    <div class="record-actions">
+                        <button class="btn-edit btn-small" onclick="uiManager.handleEditRecord(${record.id})">編集</button>
+                        <button class="btn-delete btn-small" onclick="uiManager.handleDeleteRecord(${record.id})">削除</button>
+                    </div>
                 </div>
-                <div class="record-actions">
-                    <button class="btn-edit btn-small" onclick="uiManager.handleEditRecord(${record.id})">編集</button>
-                    <button class="btn-delete btn-small" onclick="uiManager.handleDeleteRecord(${record.id})">削除</button>
-                </div>
+            `;
+        }).join('');
             </div>
         `).join('');
     }
@@ -301,10 +354,16 @@ class UIManager {
         document.getElementById('notes').value = record.notes || '';
         document.getElementById('latitude').value = record.latitude || '';
         document.getElementById('longitude').value = record.longitude || '';
+        document.getElementById('manualLatitude').value = record.latitude || '';
+        document.getElementById('manualLongitude').value = record.longitude || '';
         
         if (record.latitude && record.longitude) {
             document.getElementById('coordsDisplay').textContent = `✓ 座標: ${parseFloat(record.latitude).toFixed(4)}, ${parseFloat(record.longitude).toFixed(4)}`;
         }
+
+        // 写真を復元
+        this.photos = record.photos || [];
+        this.renderPhotoPreview();
 
         // 削除して新規作成の流れで更新
         await this.handleDeleteRecord(id);
@@ -605,13 +664,43 @@ class UIManager {
                     fillOpacity: 0.8
                 });
 
-                const popupContent = `
-                    <strong>国道${record.roadNumber}</strong><br>
-                    ${record.prefecture}<br>
-                    ${record.location || '場所未設定'}<br>
-                    <small>${this.formatDate(record.date)}</small>
+                // ポップアップコンテンツを作成
+                let popupContent = `
+                    <div style="max-width: 300px;">
+                        <strong style="font-size: 16px; color: ${color};">国道${record.roadNumber}</strong><br>
+                        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e0e0e0;">
+                            <div><strong>都道府県:</strong> ${record.prefecture}</div>
+                            <div><strong>取得場所:</strong> ${record.location || '未設定'}</div>
+                            <div><strong>取得日:</strong> ${this.formatDate(record.date)}</div>
+                            <div><strong>座標:</strong> ${lat.toFixed(4)}, ${lon.toFixed(4)}</div>
                 `;
-                marker.bindPopup(popupContent);
+
+                // メモがあれば表示
+                if (record.notes) {
+                    popupContent += `<div style="margin-top: 8px;"><strong>メモ:</strong> ${this.escapeHtml(record.notes)}</div>`;
+                }
+
+                // 写真があれば表示
+                if (record.photos && record.photos.length > 0) {
+                    popupContent += `
+                        <div style="margin-top: 12px; border-top: 1px solid #e0e0e0; padding-top: 8px;">
+                            <strong>写真:</strong>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; margin-top: 4px;">
+                    `;
+                    record.photos.slice(0, 4).forEach((photo, idx) => {
+                        popupContent += `
+                            <img src="${photo}" alt="写真${idx + 1}" style="width: 100%; height: auto; border-radius: 4px; cursor: pointer;" onclick="uiManager.viewPhotoModal('${photo}')">
+                        `;
+                    });
+                    if (record.photos.length > 4) {
+                        popupContent += `<div style="grid-column: 1 / -1; text-align: center; color: #999; font-size: 12px;">他 ${record.photos.length - 4} 枚</div>`;
+                    }
+                    popupContent += `</div></div>`;
+                }
+
+                popupContent += '</div>';
+
+                marker.bindPopup(popupContent, { maxWidth: 350 });
                 marker.addTo(markerGroup);
                 markersByRoad[roadNum].push(marker);
             }
@@ -664,6 +753,122 @@ class UIManager {
         }
 
         container.innerHTML = html;
+    }
+
+    // 写真処理機能
+    async handlePhotoInput(e) {
+        const files = e.target.files;
+        if (files.length === 0) return;
+
+        for (let file of files) {
+            if (!file.type.startsWith('image/')) {
+                this.showToast('画像ファイルのみアップロード可能です', 'error');
+                continue;
+            }
+
+            // ファイルサイズチェック（5MB以下）
+            if (file.size > 5 * 1024 * 1024) {
+                this.showToast('画像サイズは5MB以下にしてください', 'error');
+                continue;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                // Base64文字列として保存
+                const base64String = event.target.result;
+                this.photos.push(base64String);
+                this.renderPhotoPreview();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ファイル入力をリセット
+        e.target.value = '';
+    }
+
+    renderPhotoPreview() {
+        const container = document.getElementById('photoPreview');
+        
+        if (this.photos.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+
+        container.innerHTML = this.photos.map((photo, index) => `
+            <div class="photo-preview-item">
+                <img src="${photo}" alt="プレビュー${index + 1}">
+                <button type="button" class="photo-preview-remove" onclick="uiManager.removePhoto(${index})" title="削除">×</button>
+            </div>
+        `).join('');
+    }
+
+    removePhoto(index) {
+        this.photos.splice(index, 1);
+        this.renderPhotoPreview();
+    }
+
+    // 現在地取得機能
+    async handleGetCurrentLocation() {
+        const btn = document.getElementById('currentLocationBtn');
+        btn.disabled = true;
+        btn.textContent = '取得中...';
+
+        try {
+            const position = await this.getCurrentPosition();
+            document.getElementById('manualLatitude').value = position.latitude.toFixed(4);
+            document.getElementById('manualLongitude').value = position.longitude.toFixed(4);
+            document.getElementById('latitude').value = position.latitude;
+            document.getElementById('longitude').value = position.longitude;
+            document.getElementById('coordsDisplay').textContent = `✓ 現在地を取得しました (${position.latitude.toFixed(4)}, ${position.longitude.toFixed(4)})`;
+            this.showToast('現在地を取得しました', 'success');
+        } catch (error) {
+            console.error('Geolocation error:', error);
+            let errorMsg = '現在地の取得に失敗しました';
+            if (error.code === 1) {
+                errorMsg = '位置情報の許可が必要です';
+            } else if (error.code === 2) {
+                errorMsg = 'GPS信号が取得できません';
+            } else if (error.code === 3) {
+                errorMsg = 'タイムアウトしました';
+            }
+            this.showToast(errorMsg, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '📍';
+        }
+    }
+
+    getCurrentPosition() {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocation is not supported'));
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    resolve({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    });
+                },
+                (error) => reject(error),
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        });
+    }
+
+    // 写真表示モーダル
+    viewPhotoModal(photoData) {
+        // シンプルな写真表示（新しいウィンドウで開く）
+        const img = new Image();
+        img.src = photoData;
+        const w = window.open();
+        w.document.write(img.outerHTML);
     }
 }
 

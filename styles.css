@@ -123,6 +123,29 @@ body {
     color: var(--text-color);
 }
 
+.form-group .small-label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.coords-input-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.coords-input-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.coords-input-item input {
+    margin: 0 !important;
+}
+
 .form-group input,
 .form-group textarea,
 .form-group select {
@@ -193,6 +216,77 @@ body {
 .btn-small {
     padding: 8px 16px;
     font-size: 0.9rem;
+}
+
+/* 写真入力 */
+.photo-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.photo-input-group input[type="file"] {
+    padding: 10px;
+    border: 2px dashed var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: var(--bg-light);
+    transition: all 0.3s ease;
+}
+
+.photo-input-group input[type="file"]:hover {
+    border-color: var(--primary-color);
+    background-color: rgba(52, 152, 219, 0.05);
+}
+
+.photo-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+}
+
+.photo-preview-item {
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%;
+    border-radius: 4px;
+    overflow: hidden;
+    background-color: var(--bg-light);
+    box-shadow: var(--shadow);
+}
+
+.photo-preview-item img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.photo-preview-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background-color: rgba(231, 76, 60, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.photo-preview-remove:hover {
+    background-color: var(--danger-color);
+    transform: scale(1.1);
 }
 
 /* リスト表示 */
@@ -272,6 +366,42 @@ body {
 .record-detail-item strong {
     min-width: 80px;
     color: var(--text-color);
+}
+
+.record-photos {
+    margin: 12px 0;
+    padding: 12px 0;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.record-photos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+}
+
+.record-photo {
+    width: 100%;
+    padding-bottom: 100%;
+    position: relative;
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.record-photo:hover {
+    transform: scale(1.05);
+}
+
+.record-photo img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .record-actions {
@@ -785,4 +915,52 @@ body {
         left: 5%;
         max-height: 150px;
     }
+}
+
+/* 写真モーダル */
+#photoModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+#photoModal.active {
+    display: flex;
+}
+
+#photoModal img {
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Leafletポップアップのカスタマイズ */
+.leaflet-popup-content-wrapper {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.leaflet-popup-content {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #2c3e50;
+    margin: 0 !important;
+}
+
+.leaflet-popup-content div {
+    margin: 4px 0;
+    font-size: 13px;
+}
+
+.leaflet-popup-content strong {
+    color: #2c3e50;
+    font-weight: 600;
 }
