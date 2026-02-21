@@ -1,263 +1,174 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="国道ステッカーの取得記録を管理するアプリ">
-    <meta name="theme-color" content="#3498db">
-    <title>国道ステッカー取得記録</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%233498db' width='192' height='192'/><text x='50%' y='50%' font-size='100' font-weight='bold' fill='white' text-anchor='middle' dy='.3em'>国</text></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%233498db' width='192' height='192'/><text x='50%' y='50%' font-size='100' font-weight='bold' fill='white' text-anchor='middle' dy='.3em'>国</text></svg>">
-    <link rel="stylesheet" href="styles.css">
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1a6b2f" />
+  <meta name="description" content="日本の一般国道ステッカーの取得状況を記録するPWAアプリ" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="国道ステッカー" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./style.css" />
+  <title>国道ステッカーコレクション</title>
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <h1>🛣️ 国道ステッカー取得記録</h1>
-            <p class="subtitle">日本全国の国道ステッカーを集めよう！</p>
-        </header>
 
-        <main class="main-content">
-            <!-- タブナビゲーション -->
-            <div class="tabs">
-                <button class="tab-btn active" data-tab="form-tab">新規登録</button>
-                <button class="tab-btn" data-tab="list-tab">取得済み一覧</button>
-                <button class="tab-btn" data-tab="map-tab">地図表示</button>
-                <button class="tab-btn" data-tab="stats-tab">統計情報</button>
-            </div>
-
-            <!-- 新規登録タブ -->
-            <div id="form-tab" class="tab-content active">
-                <div class="form-container">
-                    <form id="addForm">
-                        <div class="form-group">
-                            <label for="roadNumber">国道番号 *</label>
-                            <input 
-                                type="number" 
-                                id="roadNumber" 
-                                min="1" 
-                                max="999" 
-                                placeholder="例：1, 246, 20"
-                                required
-                            >
-                        </div>
-
-                        <div class="form-group">
-                            <label for="prefecture">都道府県 *</label>
-                            <select id="prefecture" required>
-                                <option value="">選択してください</option>
-                                <option value="北海道">北海道</option>
-                                <option value="青森県">青森県</option>
-                                <option value="岩手県">岩手県</option>
-                                <option value="宮城県">宮城県</option>
-                                <option value="秋田県">秋田県</option>
-                                <option value="山形県">山形県</option>
-                                <option value="福島県">福島県</option>
-                                <option value="茨城県">茨城県</option>
-                                <option value="栃木県">栃木県</option>
-                                <option value="群馬県">群馬県</option>
-                                <option value="埼玉県">埼玉県</option>
-                                <option value="千葉県">千葉県</option>
-                                <option value="東京都">東京都</option>
-                                <option value="神奈川県">神奈川県</option>
-                                <option value="新潟県">新潟県</option>
-                                <option value="富山県">富山県</option>
-                                <option value="石川県">石川県</option>
-                                <option value="福井県">福井県</option>
-                                <option value="山梨県">山梨県</option>
-                                <option value="長野県">長野県</option>
-                                <option value="岐阜県">岐阜県</option>
-                                <option value="愛知県">愛知県</option>
-                                <option value="三重県">三重県</option>
-                                <option value="滋賀県">滋賀県</option>
-                                <option value="京都府">京都府</option>
-                                <option value="大阪府">大阪府</option>
-                                <option value="兵庫県">兵庫県</option>
-                                <option value="奈良県">奈良県</option>
-                                <option value="和歌山県">和歌山県</option>
-                                <option value="鳥取県">鳥取県</option>
-                                <option value="島根県">島根県</option>
-                                <option value="岡山県">岡山県</option>
-                                <option value="広島県">広島県</option>
-                                <option value="山口県">山口県</option>
-                                <option value="徳島県">徳島県</option>
-                                <option value="香川県">香川県</option>
-                                <option value="愛媛県">愛媛県</option>
-                                <option value="高知県">高知県</option>
-                                <option value="福岡県">福岡県</option>
-                                <option value="佐賀県">佐賀県</option>
-                                <option value="長崎県">長崎県</option>
-                                <option value="熊本県">熊本県</option>
-                                <option value="大分県">大分県</option>
-                                <option value="宮崎県">宮崎県</option>
-                                <option value="鹿児島県">鹿児島県</option>
-                                <option value="沖縄県">沖縄県</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="location">取得場所 *</label>
-                            <div class="location-input-group">
-                                <input 
-                                    type="text" 
-                                    id="location" 
-                                    placeholder="例：道の駅〇〇"
-                                    required
-                                >
-                                <button type="button" id="geocodeBtn" class="btn-icon" title="住所から緯度経度を取得">🔍</button>
-                            </div>
-                            <div id="geocodeSuggestions" class="geocode-suggestions"></div>
-                            <input type="hidden" id="latitude">
-                            <input type="hidden" id="longitude">
-                            <small id="coordsDisplay" class="coords-display"></small>
-                        </div>
-
-                        <div class="form-group">
-                            <label>緯度経度 (オプション)</label>
-                            <div class="coords-input-group">
-                                <div class="coords-input-item">
-                                    <label for="manualLatitude" class="small-label">緯度</label>
-                                    <input 
-                                        type="number" 
-                                        id="manualLatitude"
-                                        placeholder="例：35.0116"
-                                        step="0.0001"
-                                        min="-90"
-                                        max="90"
-                                    >
-                                </div>
-                                <div class="coords-input-item">
-                                    <label for="manualLongitude" class="small-label">経度</label>
-                                    <input 
-                                        type="number" 
-                                        id="manualLongitude"
-                                        placeholder="例：135.7681"
-                                        step="0.0001"
-                                        min="-180"
-                                        max="180"
-                                    >
-                                </div>
-                                <button type="button" id="currentLocationBtn" class="btn-icon" title="現在地を取得">📍</button>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="photo">写真 (オプション)</label>
-                            <div class="photo-input-group">
-                                <input 
-                                    type="file" 
-                                    id="photo"
-                                    accept="image/*"
-                                    capture="environment"
-                                >
-                                <div id="photoPreview" class="photo-preview"></div>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="date">取得日 *</label>
-                            <input 
-                                type="date" 
-                                id="date"
-                                required
-                            >
-                        </div>
-
-                        <div class="form-group">
-                            <label for="notes">メモ</label>
-                            <textarea 
-                                id="notes" 
-                                placeholder="その他の情報（オプション）"
-                                rows="3"
-                            ></textarea>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary">追加</button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- 地図タブ -->
-            <div id="map-tab" class="tab-content">
-                <div class="map-container">
-                    <div id="map" class="map-view"></div>
-                    <div class="map-info">
-                        <h3>取得場所の地図</h3>
-                        <div id="mapLegend" class="map-legend"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 取得済み一覧タブ -->
-            <div id="list-tab" class="tab-content">
-                <div class="list-header">
-                    <div class="search-box">
-                        <input 
-                            type="text" 
-                            id="searchInput" 
-                            placeholder="国道番号または都道府県で検索..."
-                            class="search-input"
-                        >
-                    </div>
-                    <button id="clearAllBtn" class="btn btn-danger">すべて削除</button>
-                </div>
-                <div id="recordsList" class="records-list">
-                    <p class="empty-message">まだ記録がありません</p>
-                </div>
-            </div>
-
-            <!-- 統計情報タブ -->
-            <div id="stats-tab" class="tab-content">
-                <div class="stats-container">
-                    <div class="stat-card">
-                        <h3>取得済みステッカー数</h3>
-                        <p class="stat-value" id="totalCount">0</p>
-                        <p class="stat-label">個</p>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <h3>取得した都道府県数</h3>
-                        <p class="stat-value" id="prefectureCount">0</p>
-                        <p class="stat-label">都道府県</p>
-                    </div>
-
-                    <div class="stat-card">
-                        <h3>最近の取得日</h3>
-                        <p class="stat-value" id="latestDate">-</p>
-                        <p class="stat-label">の国道番号</p>
-                    </div>
-
-                    <div class="stat-card">
-                        <h3>最多取得都道府県</h3>
-                        <p class="stat-value" id="topPrefecture">-</p>
-                        <p class="stat-label" id="topPrefectureCount">0個</p>
-                    </div>
-                </div>
-
-                <div class="stats-detailed">
-                    <h3>都道府県別取得数</h3>
-                    <div id="prefectureStats" class="prefecture-stats">
-                        <p class="empty-message">データがありません</p>
-                    </div>
-                </div>
-
-                <div class="export-section">
-                    <h3>データ管理</h3>
-                    <button id="exportBtn" class="btn btn-secondary">データをエクスポート</button>
-                    <button id="importBtn" class="btn btn-secondary">データをインポート</button>
-                    <input type="file" id="importFile" accept=".json" style="display: none;">
-                </div>
-            </div>
-        </main>
+  <!-- ヘッダー -->
+  <header class="app-header">
+    <div class="header-top">
+      <div class="app-title">
+        <span class="logo">🛣</span>
+        国道ステッカーコレクション
+      </div>
+      <div class="header-stats">
+        <strong id="stat-collected">0</strong>
+        / <span id="stat-total">0</span>
+        &nbsp;<span id="stat-pct">0</span>%
+      </div>
     </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+    </div>
+  </header>
 
-    <!-- Leaflet JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-    <!-- Nominatim Geocoding Service -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-control-geocoder/1.13.0/Control.Geocoder.js"></script>
-    <script src="app.js"></script>
+  <!-- ツールバー -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="icon">🔍</span>
+      <input type="search" id="search-input" placeholder="号数・地方・区間で検索…" autocomplete="off" />
+    </div>
+    <div class="filter-tabs">
+      <button class="tab-btn active" data-filter="all">すべて</button>
+      <button class="tab-btn" data-filter="collected">取得済み</button>
+      <button class="tab-btn" data-filter="not-collected">未取得</button>
+    </div>
+    <div class="toolbar-selects">
+      <select id="region-select">
+        <option value="">地方：すべて</option>
+        <option value="北海道">北海道</option>
+        <option value="東北">東北</option>
+        <option value="関東">関東</option>
+        <option value="中部">中部</option>
+        <option value="北陸">北陸</option>
+        <option value="近畿">近畿</option>
+        <option value="中国">中国</option>
+        <option value="四国">四国</option>
+        <option value="九州">九州</option>
+        <option value="沖縄">沖縄</option>
+      </select>
+      <select id="type-select">
+        <option value="">種別：すべて</option>
+        <option value="一桁">一桁国道</option>
+        <option value="二桁">二桁国道</option>
+        <option value="三桁">三桁国道</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 地方別サマリー -->
+  <section class="region-summary">
+    <h2>地方別進捗</h2>
+    <div class="region-cards" id="region-cards"></div>
+  </section>
+
+  <!-- 国道一覧 -->
+  <section class="routes-section">
+    <div class="section-header">
+      <h2>国道一覧 <span id="section-count"></span></h2>
+      <div class="view-toggle">
+        <button class="view-btn active" id="btn-grid-view" title="グリッド表示">⊞</button>
+        <button class="view-btn" id="btn-list-view" title="リスト表示">≡</button>
+      </div>
+    </div>
+    <div id="routes-container" class="routes-grid"></div>
+  </section>
+
+  <!-- モーダル（詳細・編集） -->
+  <div id="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-sheet">
+      <div class="modal-drag"></div>
+      <div class="modal-header">
+        <div class="modal-title">
+          <h3 id="modal-route-num">国道1号</h3>
+          <div class="route-region" id="modal-route-region"></div>
+        </div>
+        <button class="modal-close" id="modal-close" aria-label="閉じる">✕</button>
+      </div>
+      <div class="modal-route-detail">
+        起点：<span id="modal-route-from"></span>　終点：<span id="modal-route-to"></span>
+      </div>
+      <button class="collect-toggle" id="collect-toggle-btn">○ 取得済みにする</button>
+
+      <!-- 取得場所 -->
+      <div class="modal-field">
+        <label for="modal-location-input">📍 取得場所</label>
+        <div class="location-input-wrap">
+          <input type="text" id="modal-location-input" placeholder="例：道の駅〇〇、△△サービスエリア" />
+          <button class="btn-gps" id="btn-gps" title="現在地を取得">🎯</button>
+        </div>
+      </div>
+
+      <!-- 緯度経度 -->
+      <div class="modal-field">
+        <label>🌐 緯度・経度</label>
+        <div class="latlng-wrap">
+          <input type="number" id="modal-lat-input" placeholder="緯度 (例: 35.6812)" step="0.000001" />
+          <span class="latlng-sep">,</span>
+          <input type="number" id="modal-lng-input" placeholder="経度 (例: 139.7671)" step="0.000001" />
+        </div>
+        <div class="latlng-actions">
+          <a id="modal-map-link" class="map-link" href="#" target="_blank" rel="noopener" style="display:none">🗺 地図で確認</a>
+        </div>
+      </div>
+
+      <!-- 写真 -->
+      <div class="modal-field">
+        <label>📷 写真</label>
+        <div class="photo-area" id="photo-area">
+          <div class="photo-grid" id="photo-grid"></div>
+          <label class="btn-add-photo" for="photo-input">
+            <span>＋ 写真を追加</span>
+            <input type="file" id="photo-input" accept="image/*" multiple capture="environment" style="display:none" />
+          </label>
+        </div>
+      </div>
+
+      <!-- メモ -->
+      <div class="modal-field">
+        <label for="modal-memo-input">📝 メモ</label>
+        <textarea id="modal-memo-input" placeholder="自由にメモを入力…"></textarea>
+      </div>
+      <div class="modal-date" id="modal-date"></div>
+    </div>
+  </div>
+
+  <!-- FAB（設定メニュー） -->
+  <div class="fab-area">
+    <button class="fab-main" id="fab-main" aria-label="メニュー">⚙</button>
+    <div class="fab-sub" id="fab-sub">
+      <div class="fab-item">
+        <span class="fab-label">データをリセット</span>
+        <button id="fab-reset" aria-label="リセット">🗑</button>
+      </div>
+      <div class="fab-item">
+        <span class="fab-label">インポート</span>
+        <button id="fab-import" aria-label="インポート">📥</button>
+      </div>
+      <div class="fab-item">
+        <span class="fab-label">エクスポート</span>
+        <button id="fab-export" aria-label="エクスポート">📤</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- トースト通知 -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="./data/routes.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
